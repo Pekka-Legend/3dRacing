@@ -1175,17 +1175,10 @@ function beginRace()
                 player.x = j * tileSize + tileSize / 2
                 player.y = i * tileSize + tileSize / 2
                 finishProp = new Prop(j * tileSize + tileSize / 2, i * tileSize + tileSize / 2, "finish")
-                i = map.length
-                j = map.length
                 fin++
             }
-            if (map[i][j] == -2) //if tile is finish line
+            if (map[i][j] == -2) //if tile is checkpoint
             {
-                player.x = j * tileSize + tileSize / 2
-                player.y = i * tileSize + tileSize / 2
-                finishProp = new Prop(j * tileSize + tileSize / 2, i * tileSize + tileSize / 2, "finish")
-                i = map.length
-                j = map.length
                 cps++
             }
         }

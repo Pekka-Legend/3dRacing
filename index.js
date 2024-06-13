@@ -43,6 +43,8 @@ var currentSaveIndex = 0
 
 var racingGhost = false
 
+var checkpointPropIndexes = []
+
 //types- 0: asphalt, 1: mud, 2: alien
 var floorTypes = [
     {
@@ -195,12 +197,12 @@ class Player
         {
             this.speed += this.acceleration * dt * floorTypes[floor].friction
         }
-        if (this.speed > this.currentTopSpeed)
-        {
-            this.speed = this.currentTopSpeed
-        }
         else if (keys.w != true)//neither forward nor back are pressed, lose speed gradually
         {
+            if (keys.s == true && this.speed > 0)
+            {
+                this.speed -= this.acceleration * dt * floorTypes[floor].friction / 2
+            }
             if (this.speed > 0)
             {
                 this.speed -= .3 * dt * floorTypes[floor].friction * tileSize
@@ -214,6 +216,10 @@ class Player
             {
                 this.speed = 0
             }
+        }
+        if (this.speed > this.currentTopSpeed)
+        {
+            this.speed = this.currentTopSpeed
         }
         if (keys.a == true)
         {
@@ -234,7 +240,6 @@ class Player
         }
         if (keys.d == true)
         {
-
             this.direction += .1 * dt * this.turnSpeed
             if (!keys.shift)
             {
@@ -285,11 +290,11 @@ class Player
                 while(map[testY][testX] > 0)
                 {
                     this.x -= -Math.sin(this.direction) * dt
-                    if (keys.shift && keys.a)
+                    if (keys.shift && keys.a && keys.d == false)
                     {
                         this.x += (Math.cos(this.direction) * this.speed * dt * this.driftPower) / 10
                     }
-                    if (keys.shift && keys.d)
+                    if (keys.shift && keys.d && keys.a == false)
                     {
                         this.x -= (Math.cos(this.direction) * this.speed * dt * this.driftPower) / 10
                     }
@@ -301,11 +306,11 @@ class Player
 
             this.y += Math.cos(this.direction) * dt * 10
 
-            if (keys.shift && keys.a)
+            if (keys.shift && keys.a && keys.d == false)
             {
                 this.y -= Math.sin(this.direction) * this.speed * dt * this.driftPower
             }
-            if (keys.shift && keys.d)
+            if (keys.shift && keys.d && keys.a == false)
             {
                 this.y += Math.sin(this.direction) * this.speed * dt * this.driftPower
             }
@@ -319,11 +324,11 @@ class Player
                 while(map[testY][testX] > 0)
                 {
                     this.y -= Math.cos(this.direction) * dt
-                    if (keys.shift && keys.a)
+                    if (keys.shift && keys.a && keys.d == false)
                     {
                         this.y += (Math.sin(this.direction) * this.speed * dt * this.driftPower) / 10
                     }
-                    if (keys.shift && keys.d)
+                    if (keys.shift && keys.d && keys.a == false)
                     {
                         this.y -= (Math.sin(this.direction) * this.speed * dt * this.driftPower) / 10
                     }
@@ -550,6 +555,22 @@ class Prop
                 height *= hOffset
                 let width = height
                 c.drawImage(spriteSheet, 194, 65, 61, 63, propScreenX - width / 2, canvas.height / 2 - height / 4, width, height)
+            }
+            if (this.type == "cp1" && map[checkpointPropIndexes[0][1]][checkpointPropIndexes[0][0]] != -3)
+            {
+                let hOffset = .05 * tileSize
+                height *= hOffset
+                let width = height
+                //fix the showing underneath walls issue
+                c.drawImage(spriteSheet, 258, 65, 60, 63, propScreenX - width / 2, canvas.height / 2 - height / 4, width, height)
+            }
+            if (this.type == "cp2" && map[checkpointPropIndexes[1][1]][checkpointPropIndexes[1][0]] != -3)
+            {
+                let hOffset = .05 * tileSize
+                height *= hOffset
+                let width = height
+                //fix the showing underneath walls issue
+                c.drawImage(spriteSheet, 258, 65, 60, 63, propScreenX - width / 2, canvas.height / 2 - height / 4, width, height)
             }
         }  
         
@@ -925,6 +946,8 @@ props = {
     tires: [new Prop(player.x - tileSize, player.y, "tire")]
 }
 finishProp = new Prop(0, 0, "finish")
+cpProp1 = new Prop(0, 0, "cp1")
+cpProp2 = new Prop(0, 0, "cp2")
 ghostProp = new Prop(0, 0, "ghost")
 
 editorWallButtons = [new Button(canvas.width / 2 + canvas.width / 8, canvas.height / 10, commonOffset, commonOffset, "", "white", "grey", "", 0), new Button(canvas.width / 2 + canvas.width / 8 + commonOffset * 1.5, canvas.height / 10, commonOffset, commonOffset, "", "white", "grey", "", 1), new Button(canvas.width / 2 + canvas.width / 8 + commonOffset * 3, canvas.height / 10, commonOffset, commonOffset, "", "white", "grey", "", 2)]
@@ -1098,6 +1121,14 @@ function raycastScreen()
         {
             finishProp.draw()
         }
+        if (cpProp1.distanceToPlayer >= trueRayLength2 && cpProp1.distanceToPlayer <= trueRayLength1)
+        {
+            cpProp1.draw()
+        }
+        if (cpProp2.distanceToPlayer >= trueRayLength2 && cpProp2.distanceToPlayer <= trueRayLength1)
+        {
+            cpProp2.draw()
+        }
         if (ghostProp.distanceToPlayer >= trueRayLength2 && ghostProp.distanceToPlayer <= trueRayLength1)
         {
             ghostProp.draw()
@@ -1131,6 +1162,14 @@ function raycastScreen()
     if (finishProp.distanceToPlayer + .0001 <= 4000 / posList[posList.length - 1].length)
     {
         finishProp.draw()
+    }
+    if (cpProp1.distanceToPlayer + .0001 <= 4000 / posList[posList.length - 1].length)
+    {
+        cpProp1.draw()
+    }
+    if (cpProp2.distanceToPlayer + .0001 <= 4000 / posList[posList.length - 1].length)
+    {
+        cpProp2.draw()
     }
     if (ghostProp.distanceToPlayer + .0001 <= 4000 / posList[posList.length - 1].length)
     {
@@ -1166,6 +1205,7 @@ function beginRace()
     let cps = 0
     let fin = 0
 
+    checkpointPropIndexes = []
     //reset player variables
     for (var i = 0; i < map.length; i++)
     {
@@ -1178,18 +1218,32 @@ function beginRace()
                 finishProp = new Prop(j * tileSize + tileSize / 2, i * tileSize + tileSize / 2, "finish")
                 fin++
             }
-            if (map[i][j] == -2) //if tile is checkpoint
+            if (map[i][j] == -2 || map[i][j] == -3) //if tile is checkpoint
             {
                 cps++
+                if (cps == 1)
+                {
+                    cpProp1 = new Prop(j * tileSize + tileSize / 2, i * tileSize + tileSize / 2, "cp1")
+                    checkpointPropIndexes.push([j, i])
+                }
+                if (cps == 2)
+                {
+                    cpProp2 = new Prop(j * tileSize + tileSize / 2, i * tileSize + tileSize / 2, "cp2")
+                    checkpointPropIndexes.push([j, i])
+                }
             }
         }
     }
 
-    if (cps != 2 || fin != 1)
+    if (menu != 0)
     {
-        alert("A level must have 2 checkpoints and a finish line")
-        return
+        if (cps != 2 || fin != 1)
+        {
+            alert("A level must have 2 checkpoints and a finish line")
+            return
+        }
     }
+    
     props.cones.forEach(cone =>{
         cone.active = true
     })
@@ -1232,6 +1286,15 @@ function saveLevel()
     }
 
     return output
+}
+
+function optionallySaveLevel()
+{
+    let shouldSave = prompt("Would you like to save before continuing? (y/n)")
+    if (shouldSave == "y")
+    {
+        saveLevel()
+    }
 }
 
 function loadLevel(levelName, inLocalStorage)
@@ -1942,6 +2005,8 @@ function animate()
             tire.update()
         })
         finishProp.update()
+        cpProp1.update()
+        cpProp2.update()
         ghostProp.update()
 
         raycastScreen()
@@ -2081,6 +2146,7 @@ function animate()
         backToMenuFromEditor.draw()
         if (backToMenuFromEditor.isClicked())
         {
+            optionallySaveLevel()
             menu = 2
         }
         exportLevelButton.draw()
@@ -2102,6 +2168,7 @@ function animate()
         if (playLevel.isClicked())
         {
             driveMode = 0
+            optionallySaveLevel()
             beginRace()
         }
         saveLevelButton.draw()
@@ -2266,7 +2333,7 @@ function animate()
         c.clearRect(0, 0, canvas.width, canvas.height)
         c.fillStyle = 'dodgerblue'
         c.fillRect(0, 0, canvas.width, canvas.height)
-        if (userLevelActionButton.text == "Race Ghost" || userLevelActionButton.text == "View Ghost")
+        if (userLevelActionButton.text == "Race Solo" || userLevelActionButton.text == "Race Ghost" || userLevelActionButton.text == "View Ghost" || userLevelActionButton.text == "Delete Ghost")
         {
             userLevelButtons = setupUserLevelButtonsForGhost("userghost")
         }
@@ -2316,7 +2383,7 @@ function animate()
         c.clearRect(0, 0, canvas.width, canvas.height)
         c.fillStyle = 'dodgerblue'
         c.fillRect(0, 0, canvas.width, canvas.height)
-        if (importedLevelActionButton.text == "Race Ghost" || importedLevelActionButton.text == "View Ghost")
+        if (importedLevelActionButton.text == "Race Solo" || importedLevelActionButton.text == "Race Ghost" || importedLevelActionButton.text == "View Ghost")
         {
             importedLevelButtons = setupUserLevelButtonsForGhost("importedghost")
         }
@@ -2359,30 +2426,27 @@ animate()
 
 document.onkeydown = function(e)
 {
-    if (e.key == 'w' || e.key == 'ArrowUp')
+    if (e.key == 'w' || e.key == 'ArrowUp' || e.key == 'W')
     {
         keys.w = true
     }
-    if (e.key == 's' || e.key == 'ArrowDown')
+    if (e.key == 's' || e.key == 'ArrowDown' || e.key == 'S')
     {
         keys.s = true
     }
-    if (e.key == 'a' || e.key == 'ArrowLeft')
+    if (e.key == 'a' || e.key == 'ArrowLeft' || e.key == 'A')
     {
         keys.a = true
         keys.d = false
     }
-    if (e.key == 'd' || e.key == 'ArrowRight')
+    if (e.key == 'd' || e.key == 'ArrowRight' || e.key == 'D')
     {
         keys.d = true
         keys.a = false
     }
-    if (keys.shift == false)
+    if (e.key == "Shift")
     {
-        if (e.key == "Shift")
-        {
-            keys.shift = true
-        }
+        keys.shift = true
     }
     
     if (e.key == "r") //resets the race
@@ -2391,22 +2455,6 @@ document.onkeydown = function(e)
         {
             beginRace()
         }
-    }
-    if (e.key == "p") //saves the level
-    {
-        saveLevel()
-    }
-    if (e.key == "l") //loads a level
-    {
-        loadLevel()
-    }
-    if (e.key == "f")
-    {
-        driveMode = 1
-    }
-    if (e.key == "g")
-    {
-        driveMode = 0
     }
     if (e.key == " ")
     {

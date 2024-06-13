@@ -1,4 +1,4 @@
-//CURRENT WORK - fix all the bugs
+//CURRENT WORK - add a graphic for checkpoints, add names to levels
 //TODO make levels
 //TODO add different drifting speeds and test on different size maps
 //TODO add a garage with different cars
@@ -37,6 +37,7 @@ var ghostReadIndex = 0
 var currentTimer = 0
 var endTime = 0
 var startRaceTime = Date.now()
+var levelType = 0 //0 is user level, 1 is imported level
 
 var currentSaveIndex = 0
 
@@ -1618,6 +1619,7 @@ function drawUserLevels()
         {
             if (localStorage.getItem("level" + (i).toString()) != null)
             {
+                levelType = 0
                 if (userLevelActionButton.text == "  Edit  ")//0 is edit, 1 is race solo, 2 is race ghost, 3 is delete level
                 {
                     loadLevel("level" + (i).toString(), true)
@@ -1690,6 +1692,7 @@ function drawUserLevels()
             {
                 if (userLevelActionButton.text == "  Edit  ")
                 {
+                    levelType = 0
                     changeMapSize(10)
                     menu = 1
                     currentSaveIndex = i
@@ -1713,6 +1716,7 @@ function drawImportedLevels()
         {
             if (localStorage.getItem("importedlevel" + (i).toString()) != null)
             {
+                levelType = 1
                 if (importedLevelActionButton.text == "Import Level")
                 {
                     let sd = prompt("Are you sure you want to overwrite a previously imported level? (y/n)")
@@ -1768,6 +1772,7 @@ function drawImportedLevels()
             {
                 if (importedLevelActionButton.text == "Import Level")
                 {
+                    levelType = 1
                     importLevel(i)
                 }
                 else
@@ -2169,25 +2174,45 @@ function animate()
         c.fillRect(0, 0, canvas.width, canvas.height)
 
         let w = 0
-        if (localStorage.getItem('userghost' + currentSaveIndex) == null)
+        if (levelType == 0)//if playing a user created level
         {
-            localStorage.setItem('userghost' + (currentSaveIndex).toString(), ghostWritingString)
+            if (localStorage.getItem('userghost' + currentSaveIndex) == null)
+            {
+                localStorage.setItem('userghost' + (currentSaveIndex).toString(), ghostWritingString)
+            }
+            else if (endTime < parseFloat(findGhostTime(localStorage.getItem('userghost' + currentSaveIndex))))
+            {
+                localStorage.setItem('userghost' + (currentSaveIndex).toString(), ghostWritingString)
+            }
+    
+            if (driveMode == 1 && racingGhost == false)//if wathcing ghost don't show ghost time
+            {
+                endTime = findGhostTime(localStorage.getItem('userghost' + currentSaveIndex))
+            }
+            else
+            {
+                c.font = 40 + "px Arcade Normal"
+                w = c.measureText("Ghost Time: " + findGhostTime(localStorage.getItem('userghost' + currentSaveIndex)).toString()).width
+                c.fillStyle = 'yellow'
+                c.fillText("Ghost Time: " + findGhostTime(localStorage.getItem('userghost' + currentSaveIndex)).toString(), canvas.width / 2 - w / 2, canvas.height / 2.25)
+            }
         }
-        else if (endTime < parseFloat(findGhostTime(localStorage.getItem('userghost' + currentSaveIndex))))
+        else if (levelType == 1)
         {
-            localStorage.setItem('userghost' + (currentSaveIndex).toString(), ghostWritingString)
+    
+            if (driveMode == 1 && racingGhost == false)//if wathcing ghost don't show ghost time
+            {
+                endTime = findGhostTime(localStorage.getItem('importedghost' + currentSaveIndex))
+            }
+            else
+            {
+                c.font = 40 + "px Arcade Normal"
+                w = c.measureText("Ghost Time: " + findGhostTime(localStorage.getItem('importedghost' + currentSaveIndex)).toString()).width
+                c.fillStyle = 'yellow'
+                c.fillText("Ghost Time: " + findGhostTime(localStorage.getItem('importedghost' + currentSaveIndex)).toString(), canvas.width / 2 - w / 2, canvas.height / 2.25)
+            }
         }
-        if (driveMode == 1 && racingGhost == false)//if wathcing ghost don't show ghost time
-        {
-            endTime = findGhostTime(localStorage.getItem('userghost' + currentSaveIndex))
-        }
-        else
-        {
-            c.font = 40 + "px Arcade Normal"
-            w = c.measureText("Ghost Time: " + findGhostTime(localStorage.getItem('userghost' + currentSaveIndex)).toString()).width
-            c.fillStyle = 'yellow'
-            c.fillText("Ghost Time: " + findGhostTime(localStorage.getItem('userghost' + currentSaveIndex)).toString(), canvas.width / 2 - w / 2, canvas.height / 2.25)
-        }
+        
         c.font = 60 + "px Arcade Normal"
         w = c.measureText(endTime.toString()).width
         c.fillStyle = 'yellow'
@@ -2203,6 +2228,15 @@ function animate()
                 else if (button.text == "Watch Ghost")
                 {
                     driveMode = 1
+                    if (levelType == 0)
+                    {
+                        ghostWritingString = localStorage.getItem("userghost" + currentSaveIndex.toString())
+                    }
+                    if (levelType == 1)
+                    {
+                        ghostWritingString = localStorage.getItem("importedghost" + currentSaveIndex.toString())
+                    }
+                    
                     ghostReadIndex = 0
                     racingGhost = false
                     beginRace()
@@ -2211,6 +2245,14 @@ function animate()
                 {
                     driveMode = 0
                     racingGhost = true
+                    if (levelType == 0)
+                    {
+                        ghostWritingString = localStorage.getItem("userghost" + currentSaveIndex.toString())
+                    }
+                    if (levelType == 1)
+                    {
+                        ghostWritingString = localStorage.getItem("importedghost" + currentSaveIndex.toString())
+                    }
                     ghostRacingString = ghostWritingString
                     ghostReadIndex = 0
                     beginRace()
@@ -2274,7 +2316,7 @@ function animate()
         c.clearRect(0, 0, canvas.width, canvas.height)
         c.fillStyle = 'dodgerblue'
         c.fillRect(0, 0, canvas.width, canvas.height)
-        if (importedLevelActionButton.text == "Race Ghost" || userLevelActionButton.text == "View Ghost")
+        if (importedLevelActionButton.text == "Race Ghost" || importedLevelActionButton.text == "View Ghost")
         {
             importedLevelButtons = setupUserLevelButtonsForGhost("importedghost")
         }
@@ -2370,13 +2412,9 @@ document.onkeydown = function(e)
     {
         keys.space = true
     }
-    if (e.key == "u")
+    if (e.key == "q")
     {
-        exportLevel()
-    }
-    if (e.key == "v")
-    {
-        importLevel()
+        menu = 2
     }
 }
 document.onkeyup = function(e)
